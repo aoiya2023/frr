@@ -1,0 +1,48 @@
+frr version 8.1
+frr defaults traditional
+hostname clinic-Precision-T3600
+log file /tmp/frr.log
+log syslog informational
+no ip forwarding
+no ipv6 forwarding
+hostname computer1
+service integrated-vtysh-config
+!
+<!-- Send traffic bound for 10.0.0.1/32 to null -->
+ip route 10.0.0.1/32 Null0
+!
+<!-- Config for BGP router in AS64501 -->
+router bgp 64501
+ bgp router-id 134.173.43.105
+ <!-- Log any changes to AS and the reason for the change  -->
+ bgp log-neighbor-changes
+ <!-- Allow E-BGP sesions even without policies for inbound and outbound traffic -->
+ no bgp ebgp-requires-policy
+ <!-- Establish link with neighboring ASes -->
+ neighbor 134.173.43.102 remote-as 64508
+ neighbor 134.173.43.103 remote-as 64502
+ !
+ <!-- Configuration for ipV4 unicast -->
+ address-family ipv4 unicast
+  <!-- Add static routes to route-map 'map-out' -->
+  redistribute static metric 100 route-map map-out
+  <!-- Allow changing policies without taking the BGP connection -->
+  neighbor 134.173.43.102 soft-reconfiguration inbound
+  <!-- add routes from specified ip to route-map 'map-in' -->
+  neighbor 134.173.43.102 route-map map-in in
+  <!-- send routes in 'map-out' to specified ip -->
+  neighbor 134.173.43.102 route-map map-out out
+  neighbor 134.173.43.103 soft-reconfiguration inbound
+  neighbor 134.173.43.103 route-map map-in in
+  neighbor 134.173.43.103 route-map map-out out
+ exit-address-family
+exit
+!
+<!-- configuraiton of a route-map 'map-in' -->
+route-map map-in permit 10
+exit
+!
+<!-- configuration of a route-map 'map-out' -->
+route-map map-out permit 20
+exit
+!
